@@ -1,0 +1,131 @@
+
+var map;
+
+require(["esri/map", "esri/layers/ArcGISDynamicMapServiceLayer",
+                 "esri/layers/FeatureLayer",
+                 "dojo/dom",
+                 "dijit/layout/BorderContainer",
+                 "esri/dijit/Scalebar",
+                 "dijit/layout/ContentPane",
+                 "esri/dijit/Legend",
+                 "dojo/_base/array",
+                 "dojo/domReady!"],
+
+                  function init(Map) {
+                      map = new Map("mapDiv", {
+                          center: [77.732391, 25.958045],
+                          zoom: 3,
+                          basemap: "streets",
+                          slider: false
+                      });
+
+                      var featuresUrl = "http://servicesbeta.esri.com/ArcGIS/rest/services/Hurricanes/Hurricanes/MapServer/0";
+                      var fl = new esri.layers.FeatureLayer(featuresUrl, {
+                          "id": "hurricanes",
+                          "mode": esri.layers.FeatureLayer.MODE_ONDEMAND,
+                          "outFields": ["OBJECTID", "WINDSPEED", "DAY"]
+                      });
+
+                      //add the scalebar
+                      var scalebar = new esri.dijit.Scalebar({
+                          map: map,
+                          // "dual" displays both miles and kilmometers
+                          // "english" is the default, which displays miles
+                          // use "metric" for kilometers
+                          scalebarUnit: "dual"
+                      });
+
+                      dojo.connect(fl, "onLoad", initGauge);
+                      map.addLayer(fl);
+                  }); 
+
+                  
+
+                    function initGauge(fl) {
+                        $("#gaugeDiv1,#gaugeDiv2,#gaugeDiv3,#gaugeDiv4").dxCircularGauge({
+                          preset: "preset3",
+
+                          geometry: {
+                              radius: 140
+                          },
+
+                          scale: {
+                              label: {
+                                  visible: false
+                              }
+                          },
+
+                          spindle: {
+                              visible: false
+                          },
+
+                          rangeContainer: {
+                              backgroundColor: "none"
+                          },
+
+                          commonRangeBarSettings: {
+                              size: 15,
+                              backgroundColor: "#F0F0F0"
+                          },
+
+                          rangeBars: [
+		                        { value: 0, offset: 10, color: "#A6C567", text: { indent: 30} },
+		                        { value: 0, offset: 30, color: "#679EC5", text: { indent: 50} },
+		                        { value: 0, offset: 50, color: "#AD79CE", text: { indent: 70} },
+                                { value: 0, offset: 70, color: "#e6353b", text: { indent: 90} }
+	                                ]
+                      });
+
+                      // set up mouse over highlighting
+                      var hGraphics = new esri.layers.GraphicsLayer({ "id": "highlights" });
+                      map.addLayer(hGraphics);
+                      var highlight = new esri.symbol.SimpleMarkerSymbol().setColor("red").setSize(12);
+                      dojo.connect(fl, "onMouseOver", function (e) {
+                          hGraphics.clear();
+                          hGraphics.add(new esri.Graphic(e.graphic.geometry, highlight));
+                          refreshGauge(e);
+                      });
+
+                      function refreshGauge(e) {
+                          $("#gaugeDiv1,#gaugeDiv2,#gaugeDiv3,#gaugeDiv4").dxCircularGauge({
+                              preset: "preset3",
+
+                              geometry: {
+                                  radius: 140
+                              },
+
+                              scale: {
+                                  label: {
+                                      visible: false
+                                  }
+                              },
+
+                              spindle: {
+                                  visible: false
+                              },
+
+                              rangeContainer: {
+                                  backgroundColor: "none"
+                              },
+
+                              commonRangeBarSettings: {
+                                  size: 15,
+                                  backgroundColor: "#F0F0F0"
+                              },
+
+                              rangeBars: [
+		                        { value: e.graphic.attributes.WINDSPEED, offset: 10, color: "#A6C567", text: { indent: 30} },
+		                        { value: e.graphic.attributes.WINDSPEED + 5, offset: 30, color: "#679EC5", text: { indent: 50} },
+		                        { value: e.graphic.attributes.WINDSPEED - 10, offset: 50, color: "#AD79CE", text: { indent: 70} },
+                                { value: e.graphic.attributes.WINDSPEED - 7, offset: 70, color: "#e6353b", text: { indent: 90} }
+	                                ]
+                          });
+                      }
+                      $('#dashboard').draggable();
+                      $('#clickMe').click(function () {
+                      $("#dashboard").fadeToggle("slow");
+                      });
+                  }
+
+
+
